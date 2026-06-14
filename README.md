@@ -77,6 +77,27 @@ into the generator (see `build_all.py`):
 uv run box_sizes.py
 ```
 
+## Sealing
+
+The seal needs a length of **2 mm cross-section o-ring cord** (the `oring_notional`
+value), seated in the lid groove. The groove depth is derived so the closed box
+squashes the cord by `oring_compression` (**20%** by default) once the base ridge
+is seated — change either parameter and the groove tracks it.
+
+## 3D printing & materials
+
+This design is intended to be **3D printed**.
+
+- **PETG** is recommended for a waterproof box — it bonds between layers far better
+  than PLA, so the walls and seal land actually hold water out.
+- Harder, more brittle filaments (e.g. **PLA**) will print but the **screw threads
+  are delicate** — especially the self-tapping-screw pillar variant, where the
+  thread is formed directly in the plastic. Prefer the heat-set-insert variant (or
+  PETG) if the lid will be opened repeatedly.
+
+Pre-built boxes come in four variants — plain / flanged × heat-set-insert /
+self-tapping-screw corner pillars — see the [Releases](https://github.com/morganelectronics/enclozure/releases).
+
 ## Inspect interactively
 
 Open `enclosure.py` in CQ-editor (it injects `show_object`); toggle the

@@ -45,10 +45,10 @@ class Enclosure:
 
     # ---- shell / seal ---------------------------------------------------
     outer_wall: float = 2.0
-    oring_notional: float = 2.0   # o-ring cross-section
-    ledge: float = 1.2            # ridge (tongue) width
-    ledge_height: float = 0.6
-    lid_groove_depth: float = 3.0
+    oring_notional: float = 2.0    # o-ring cord (cross-section) diameter
+    oring_compression: float = 0.20  # fraction the o-ring is squashed when closed
+    ledge: float = 1.2             # ridge (tongue) width
+    ledge_height: float = 0.6      # ridge height (left fixed; groove depth follows compression)
 
     # ---- corner screw posts --------------------------------------------
     outer_pillar_hole: float = 4.0              # threaded-insert hole (base)
@@ -80,6 +80,12 @@ class Enclosure:
     @property
     def oring_notch(self) -> float:
         return self.oring_notional + 0.8
+
+    @property
+    def lid_groove_depth(self) -> float:
+        # Once the ridge is seated, the o-ring is squeezed into (depth - ridge),
+        # so depth = compressed cord + ridge height gives the target compression.
+        return self.oring_notional * (1.0 - self.oring_compression) + self.ledge_height
 
     @property
     def ledge_from_outer(self) -> float:
@@ -362,8 +368,10 @@ class Enclosure:
             f"  pcb_mounts           : {self.pcb_mounts}",
             "",
             "GENERATED",
-            f"  corner pillar dia    : {self.outer_pillar_dia:g} mm (insert hole {self.outer_pillar_hole:g})",
+            f"  corner pillar dia    : {self.outer_pillar_dia:g} mm (base hole {self.outer_pillar_hole:g})",
             f"  lid clearance hole   : {self.outer_pillar_lid_clearance_hole:g} mm",
+            f"  o-ring cord          : {self.oring_notional:g} mm @ {self.oring_compression * 100:g}% compression",
+            f"  ridge / groove depth : {self.ledge_height:g} / {self.lid_groove_depth:g} mm",
             f"  o-ring centre radius : {self.oring_centre_radius:g} mm",
             f"  PCB standoffs        : {len(pts)} (M3 self-tap pilot {self.pcb_screw_hole:g}, "
             f"pillar dia {self.pcb_pillar_dia:g}, height {self.pcb_pillar_height:g})",
@@ -380,15 +388,17 @@ class Enclosure:
             ]
         return "\n".join(lines) + "\n"
 
-    def export_zip(self, outdir: str = ".") -> str:
-        """Write STEP + STL of base and lid into a single .zip in `outdir`."""
+    def export_zip(self, outdir: str = ".", suffix: str = "") -> str:
+        """Write STEP + STL of base and lid into a single .zip in `outdir`.
+
+        `suffix` is appended to the file stem (used to label build variants)."""
         import os
         import tempfile
         import zipfile
 
         os.makedirs(outdir, exist_ok=True)
         parts = {"base": self.make_base(), "lid": self.make_lid()}
-        stem = self.stem()
+        stem = self.stem() + suffix
         zip_path = os.path.join(outdir, stem + ".zip")
 
         with tempfile.TemporaryDirectory() as td:
