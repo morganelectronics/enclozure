@@ -303,14 +303,17 @@ class Enclosure:
         )
         base = base.union(ridge.translate((0, 0, self.base_height)))
 
+        # Flange first: it is a full-footprint plate, so the cavity must be cut
+        # AFTER it — otherwise it back-fills the cavity floor (making it 4 mm
+        # thick) and buries the lower half of the standoff bores.
+        if self.flange:
+            base = base.union(self.make_flanges())
+
         cavity = self.cross_prism(-self.ledge / 2, cavity_depth + 1.0).translate((0, 0, cavity_floor))
         base = base.cut(cavity)
 
         if self.pcb_mounts:
             base = self._add_standoffs(base, cavity_floor)
-
-        if self.flange:
-            base = base.union(self.make_flanges())
 
         # Threaded-insert bores: constant diameter, straight through (no support).
         base = self.drill_corners(base, self.outer_pillar_hole, -1.0, self.base_height + self.ledge_height + 1.0)
