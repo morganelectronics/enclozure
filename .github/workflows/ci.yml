@@ -6,11 +6,14 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -23,16 +26,29 @@ jobs:
       - name: Generate the default enclosure (smoke test)
         run: uv run enclosure.py
 
-      - name: Generate a flanged enclosure (smoke test)
-        run: uv run enclosure.py --flange --width 120 --breadth 90
+      - name: Generate a flanged enclosure with PCB mounts (smoke test)
+        run: uv run enclosure.py --flange --pcb-mounts --width 120 --breadth 90
 
-      - name: Check the zips were produced
+      - name: List the box sizes (smoke test)
+        run: uv run box_sizes.py
+
+      - name: Check the archives and their contents
         run: |
-          ls -l *.zip
-          test "$(ls *.zip | wc -l)" -ge 2
+          uv run python - <<'PY'
+          import glob, zipfile
+          zips = sorted(glob.glob("*.zip"))
+          assert len(zips) >= 2, zips
+          names = zipfile.ZipFile(zips[-1]).namelist()
+          for ext in (".step", ".stl", ".dxf", ".txt"):
+              assert any(n.endswith(ext) for n in names), (ext, names)
+          print("OK:", names)
+          PY
 
-      - name: Upload generated parts
+      - name: Build every box size
+        run: uv run build_all.py dist
+
+      - name: Upload all boxes
         uses: actions/upload-artifact@v4
         with:
-          name: enclosure-parts
-          path: "*.zip"
+          name: all-boxes
+          path: dist/*.zip

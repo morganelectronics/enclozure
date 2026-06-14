@@ -4,3 +4,4 @@
 /*.lock
 /.vs/
 /__pycache__/
+/dist/

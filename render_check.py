@@ -61,10 +61,11 @@ def render(obj, path, azimuth=-50, elevation=28, size=(1100, 850)):
 
 
 if __name__ == "__main__":
-    default = Enclosure()  # bare default: no flange
-    big = Enclosure(width=100, breadth=80, flange=True)
+    default = Enclosure()  # bare default: no flange, no mounts
+    big = Enclosure(width=100, breadth=80, flange=True, pcb_mounts=True)
     small = Enclosure(width=45, breadth=40, base_height=18, lid_height=8, flange=True)
-    render(default.make_base(), "out_base_default.png")          # default box, no flange
-    render(big.make_base(), "out_flange_big.png", elevation=-35)  # from below: flange + bores
+    render(default.make_base(), "out_base_default.png")
+    render(big.make_base(), "out_base_full.png", azimuth=-55, elevation=35)   # flange + standoffs
+    render(big.make_base(), "out_flange_under.png", elevation=-35)            # flange from below
     render(small.make_base(), "out_flange_small.png", elevation=-35)
     render(default.make_assembly(), "out_assembly.png")

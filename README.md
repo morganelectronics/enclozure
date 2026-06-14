@@ -4,10 +4,25 @@ Parametric sealed enclosure generator (CadQuery). A two-part box (base + lid)
 with an o-ring tongue-and-groove seal, corner screw posts for threaded inserts,
 and an M5 wall-mount flange.
 
-## Generate STEP + STL
+📦 **A selection of pre-built boxes is ready to download in the
+[Releases](https://github.com/morganelectronics/enclozure/releases).**
 
-Exports `base` and `lid` as STEP and STL, bundled into a single `.zip` in the
-current directory:
+![Default box](docs/img/default_box.png)
+
+| Exploded (with gap) | Base, no lid |
+|---|---|
+| ![Exploded](docs/img/exploded.png) | ![Base without lid](docs/img/base_open.png) |
+| **Side view** | **Section through the seal** |
+| ![Side](docs/img/side.png) | ![Seal section](docs/img/section_seal.png) |
+
+With the flange and PCB standoffs enabled (`--flange --pcb-mounts`):
+
+![Flange and PCB standoffs](docs/img/featured.png)
+
+## Generate the archive
+
+Exports `base` and `lid` (STEP + STL), a `pcb` outline (DXF) and a
+`parameters` text file, bundled into a single `.zip` in the current directory:
 
 ```sh
 uv run enclosure.py --width 100 --breadth 80 --lid-height 10 --base-height 30
@@ -15,16 +30,22 @@ uv run enclosure.py --width 100 --breadth 80 --lid-height 10 --base-height 30
 
 Options:
 
-| flag             | default | meaning                 |
-|------------------|---------|-------------------------|
-| `--width`        | 100     | overall X (mm)          |
-| `--breadth`      | 80      | overall Y (mm)          |
-| `--lid-height`   | 10      | lid Z (mm)              |
-| `--base-height`  | 30      | base Z (mm)             |
-| `--flange`       | off     | add the M5 mount flange |
-| `-o/--outdir`    | `.`     | output directory        |
+| flag             | default | meaning                       |
+|------------------|---------|-------------------------------|
+| `--width`        | 100     | overall X (mm)                |
+| `--breadth`      | 80      | overall Y (mm)                |
+| `--lid-height`   | 10      | lid Z (mm)                    |
+| `--base-height`  | 30      | base Z (mm)                   |
+| `--flange`       | off     | add the M5 mount flange       |
+| `--pcb-mounts`   | off     | add PCB standoffs (top + bottom) |
+| `-o/--outdir`    | `.`     | output directory              |
 
-Running with no arguments produces the default box (no flange).
+Running with no arguments produces the default box (no flange, no standoffs).
+
+The zip always contains: `*_base.step/.stl`, `*_lid.step/.stl`, a `*_pcb.dxf`
+(PCB outline inset `pcb_edge_clearance` from the inner wall, with M3 clearance
+holes at the standoff positions) and `*_parameters.txt` (inputs + generated
+values such as PCB hole spacing and flange hole sizes).
 
 ## Flange (opt-in, `--flange`)
 
@@ -38,6 +59,23 @@ slot (eye + slot, parallel to the wall, ~2 head-widths long so the head drops
 through the eye and slides fully over the plate) plus an end round hole either
 side. As the box shrinks the round holes are dropped and only the keyhole slot
 remains.
+
+## PCB standoffs (opt-in, `--pcb-mounts`)
+
+Fixed-height (`pcb_pillar_height`, 4 mm) self-tapper pillars (M3 pilot) are added
+to **both** the base and lid inner surfaces, sitting on the diagonals
+`pcb_pillar_gap` (2 mm) from the corner pillars. The count adapts to size:
+**4** on big boxes, dropping to a **diagonal pair**, then a **single central**
+post on the smallest boxes.
+
+## Box sizes
+
+`box_sizes.py` lists nominal outer sizes (length, width, height) — feed them
+into the generator (see `build_all.py`):
+
+```sh
+uv run box_sizes.py
+```
 
 ## Inspect interactively
 

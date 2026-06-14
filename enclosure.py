@@ -63,6 +63,14 @@ class Enclosure:
     m5_clearance: float = 5.5           # M5 shank clearance
     m5_head_clearance: float = 10.0     # M5 head pass-through (keyhole eye / "head width")
 
+    # ---- PCB mounting standoffs (opt-in) -------------------------------
+    pcb_mounts: bool = False
+    pcb_screw_hole: float = 2.5         # M3 self-tapper pilot hole
+    pcb_pillar_height: float = 4.0      # fixed height above the inner surface
+    pcb_pillar_gap: float = 2.0         # gap to the corner pillars, along the diagonal
+    pcb_edge_clearance: float = 1.0     # PCB outline clearance inside the cavity wall
+    m3_clearance: float = 3.2           # M3 clearance hole in the PCB
+
     # ---- misc -----------------------------------------------------------
     assembly_gap: float = 0.0
 
@@ -211,6 +219,53 @@ class Enclosure:
         return part
 
     # =====================================================================
+    # PCB mounting standoffs
+    # =====================================================================
+    @property
+    def pcb_pillar_dia(self) -> float:
+        return self.pcb_screw_hole + 2 * self.outer_wall
+
+    def pcb_points(self):
+        """Standoff centres on the diagonals, pcb_pillar_gap from the corner
+        pillars. Four on big boxes, dropping to a diagonal pair, then a single
+        central post when the box gets too small to fit more."""
+        Rop = self.outer_pillar_dia / 2
+        Rpp = self.pcb_pillar_dia / 2
+        d = (Rop + self.pcb_pillar_gap + Rpp) / math.sqrt(2)  # per-axis diagonal inset
+        px = (self.width / 2 - Rop) - d
+        py = (self.breadth / 2 - Rop) - d
+        sep = self.pcb_pillar_dia + 1.0  # keep posts off each other
+        if px > 0 and py > 0 and 2 * px >= sep and 2 * py >= sep:
+            return [(px, py), (-px, py), (px, -py), (-px, -py)]
+        if px > 0 and py > 0 and 2 * math.hypot(px, py) >= sep:
+            return [(px, py), (-px, -py)]
+        return [(0.0, 0.0)]
+
+    def _add_standoffs(self, part: cq.Workplane, floor_z: float) -> cq.Workplane:
+        """Add fixed-height self-tapper pillars standing on the inner surface."""
+        h = self.pcb_pillar_height
+        r = self.pcb_pillar_dia / 2
+        hr = self.pcb_screw_hole / 2
+        for (x, y) in self.pcb_points():
+            pillar = cq.Solid.makeCylinder(r, h, cq.Vector(x, y, floor_z))
+            part = part.union(cq.Workplane(obj=pillar))
+            bore = cq.Solid.makeCylinder(hr, h, cq.Vector(x, y, floor_z))  # blind to the floor
+            part = part.cut(cq.Workplane(obj=bore))
+        return part
+
+    def pcb_sketch(self) -> cq.Sketch:
+        """PCB outline derived from the seal centreline, offset inward to clear
+        the cavity wall by pcb_edge_clearance, with an M3 clearance hole at every
+        standoff. Offsetting the real seal path (rather than a plain rectangle)
+        makes the board follow the actual cross-shaped interior."""
+        off = self.ledge / 2 + self.pcb_edge_clearance  # cavity wall is ledge/2 in from the centreline
+        wire = self.centre_wire().offset2D(-off, "arc")[0]
+        sk = cq.Sketch().face(wire)
+        for (x, y) in self.pcb_points():
+            sk = sk.push([(x, y)]).circle(self.m3_clearance / 2, mode="s").reset()
+        return sk.clean()
+
+    # =====================================================================
     # Parts
     # =====================================================================
     def make_base(self) -> cq.Workplane:
@@ -227,6 +282,9 @@ class Enclosure:
 
         cavity = self.cross_prism(-self.ledge / 2, cavity_depth + 1.0).translate((0, 0, cavity_floor))
         base = base.cut(cavity)
+
+        if self.pcb_mounts:
+            base = self._add_standoffs(base, cavity_floor)
 
         if self.flange:
             base = base.union(self.make_flanges())
@@ -261,6 +319,9 @@ class Enclosure:
         groove = groove.translate((0, 0, self.lid_height - self.lid_groove_depth))
         lid = lid.cut(groove)
 
+        if self.pcb_mounts:
+            lid = self._add_standoffs(lid, lid_floor)
+
         lid = self.drill_corners(lid, self.outer_pillar_lid_clearance_hole, -1.0, self.lid_height + 1.0)
         return lid
 
@@ -282,6 +343,43 @@ class Enclosure:
         return (f"enclosure_{self.width:g}x{self.breadth:g}"
                 f"_base{self.base_height:g}_lid{self.lid_height:g}")
 
+    def params_text(self) -> str:
+        """Human-readable dump of the inputs and the derived/generated values."""
+        pts = self.pcb_points()
+        xs = sorted({round(abs(x), 2) for x, _ in pts if abs(x) > 1e-6})
+        ys = sorted({round(abs(y), 2) for _, y in pts if abs(y) > 1e-6})
+        sx = f"{2 * xs[0]:g}" if xs else "-"
+        sy = f"{2 * ys[0]:g}" if ys else "-"
+        lines = [
+            "Enclosure - parameters",
+            "================================",
+            "INPUTS",
+            f"  width x breadth      : {self.width:g} x {self.breadth:g} mm",
+            f"  base_height          : {self.base_height:g} mm",
+            f"  lid_height           : {self.lid_height:g} mm",
+            f"  outer_wall           : {self.outer_wall:g} mm",
+            f"  flange               : {self.flange}",
+            f"  pcb_mounts           : {self.pcb_mounts}",
+            "",
+            "GENERATED",
+            f"  corner pillar dia    : {self.outer_pillar_dia:g} mm (insert hole {self.outer_pillar_hole:g})",
+            f"  lid clearance hole   : {self.outer_pillar_lid_clearance_hole:g} mm",
+            f"  o-ring centre radius : {self.oring_centre_radius:g} mm",
+            f"  PCB standoffs        : {len(pts)} (M3 self-tap pilot {self.pcb_screw_hole:g}, "
+            f"pillar dia {self.pcb_pillar_dia:g}, height {self.pcb_pillar_height:g})",
+            f"  PCB hole spacing     : {sx} x {sy} mm",
+            f"  PCB M3 clearance     : {self.m3_clearance:g} mm",
+        ]
+        if self.flange:
+            _hr, _sr, _pr, slot_len, _fy, _rx, inc = self._flange_geom()
+            lines += [
+                f"  flange thickness     : {self.flange_thickness:g} mm",
+                f"  flange head hole     : {self.m5_head_clearance:g} mm (M5 head)",
+                f"  flange shank slot    : {self.m5_clearance:g} mm wide, {slot_len:g} mm long (eye->end)",
+                f"  flange round holes   : {'yes' if inc else 'no'}",
+            ]
+        return "\n".join(lines) + "\n"
+
     def export_zip(self, outdir: str = ".") -> str:
         """Write STEP + STL of base and lid into a single .zip in `outdir`."""
         import os
@@ -301,6 +399,18 @@ class Enclosure:
                 cq.exporters.export(part, step)
                 cq.exporters.export(part, stl, tolerance=0.1, angularTolerance=0.2)
                 files += [step, stl]
+
+            # PCB outline (DXF) — outline + M3 clearance holes at the standoffs
+            dxf = os.path.join(td, f"{stem}_pcb.dxf")
+            cq.exporters.export(cq.Workplane("XY").placeSketch(self.pcb_sketch()), dxf)
+            files.append(dxf)
+
+            # Parameters (text)
+            txt = os.path.join(td, f"{stem}_parameters.txt")
+            with open(txt, "w", encoding="utf-8") as fh:
+                fh.write(self.params_text())
+            files.append(txt)
+
             with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
                 for f in files:
                     z.write(f, os.path.basename(f))
@@ -319,19 +429,21 @@ def main(argv=None):
     p.add_argument("--lid-height", type=float, default=10.0, help="lid Z (mm)")
     p.add_argument("--base-height", type=float, default=30.0, help="base Z (mm)")
     p.add_argument("--flange", action="store_true", help="add the M5 wall-mount flange")
+    p.add_argument("--pcb-mounts", action="store_true", help="add PCB standoffs (top and bottom)")
     p.add_argument("-o", "--outdir", default=".", help="output directory (default: CWD)")
     a = p.parse_args(argv)
 
     enc = Enclosure(
         width=a.width, breadth=a.breadth,
         lid_height=a.lid_height, base_height=a.base_height,
-        flange=a.flange,
+        flange=a.flange, pcb_mounts=a.pcb_mounts,
     )
     path = enc.export_zip(a.outdir)
     if enc.flange:
         note = "flange: round + keyhole" if enc.include_round_holes() else "flange: keyhole only"
     else:
         note = "no flange"
+    note += f"; PCB standoffs: {len(enc.pcb_points()) if enc.pcb_mounts else 0}"
     print(f"wrote {path}  ({note})")
 
 
@@ -350,6 +462,7 @@ except NameError:
 if _HAVE_SHOW:
     _enc = Enclosure()
     _enc.flange = True
+    _enc.pcb_mounts = True
     # show_object(_enc.make_base(), name="base")
     # show_object(_enc.make_lid(), name="lid")
     show_object(_enc.make_assembly(), name="assembly")
