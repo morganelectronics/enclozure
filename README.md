@@ -42,10 +42,12 @@ Options:
 
 Running with no arguments produces the default box (PCB standoffs on, no flange).
 
-The zip always contains: `*_base.step/.stl`, `*_lid.step/.stl`, a `*_pcb.dxf`
-(PCB outline inset `pcb_edge_clearance` from the inner wall, with M3 clearance
-holes at the standoff positions) and `*_parameters.txt` (inputs + generated
-values such as PCB hole spacing and flange hole sizes).
+The zip always contains: `*_base.step/.stl`, `*_lid.step/.stl`, a PCB outline
+for each part (`*_pcb_base.dxf` and `*_pcb_lid.dxf` — the base and lid cavities
+differ, so the boards do too; each is inset `pcb_edge_clearance` from that
+part's inner wall, with M3 clearance holes at the standoff positions) and
+`*_parameters.txt` (inputs + generated values such as PCB hole spacing and
+flange hole sizes).
 
 ## Flange (opt-in, `--flange`)
 

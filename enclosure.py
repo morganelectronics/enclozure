@@ -276,12 +276,13 @@ class Enclosure:
             part = part.cut(cq.Workplane(obj=bore))
         return part
 
-    def pcb_sketch(self) -> cq.Sketch:
+    def pcb_sketch(self, part: str = "base") -> cq.Sketch:
         """PCB outline derived from the seal centreline, offset inward to clear
-        the cavity wall by pcb_edge_clearance, with an M3 clearance hole at every
-        standoff. Offsetting the real seal path (rather than a plain rectangle)
-        makes the board follow the actual cross-shaped interior."""
-        off = self.ledge / 2 + self.pcb_edge_clearance  # cavity wall is ledge/2 in from the centreline
+        that part's cavity wall by pcb_edge_clearance, with an M3 clearance hole
+        at every standoff. The base and lid cavities differ (the lid wall sits
+        further in), so each part gets its own outline."""
+        wall = (self.oring_notional / 2 + self.outer_wall) if part == "lid" else (self.ledge / 2)
+        off = wall + self.pcb_edge_clearance
         wire = self.centre_wire().offset2D(-off, "arc")[0]
         sk = cq.Sketch().face(wire)
         for (x, y) in self.pcb_points():
@@ -430,10 +431,11 @@ class Enclosure:
                 cq.exporters.export(part, stl, tolerance=0.1, angularTolerance=0.2)
                 files += [step, stl]
 
-            # PCB outline (DXF) — outline + M3 clearance holes at the standoffs
-            dxf = os.path.join(td, f"{stem}_pcb.dxf")
-            cq.exporters.export(cq.Workplane("XY").placeSketch(self.pcb_sketch()), dxf)
-            files.append(dxf)
+            # PCB outlines (DXF) — one per part (base & lid cavities differ)
+            for part in ("base", "lid"):
+                dxf = os.path.join(td, f"{stem}_pcb_{part}.dxf")
+                cq.exporters.export(cq.Workplane("XY").placeSketch(self.pcb_sketch(part)), dxf)
+                files.append(dxf)
 
             # Parameters (text)
             txt = os.path.join(td, f"{stem}_parameters.txt")
