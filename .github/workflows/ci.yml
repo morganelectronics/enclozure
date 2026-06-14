@@ -26,8 +26,11 @@ jobs:
       - name: Generate the default enclosure (smoke test)
         run: uv run enclosure.py
 
-      - name: Generate a flanged enclosure with PCB mounts (smoke test)
-        run: uv run enclosure.py --flange --pcb-mounts --width 120 --breadth 90
+      - name: Generate a flanged enclosure (smoke test)
+        run: uv run enclosure.py --flange --width 120 --breadth 90
+
+      - name: Generate a box without standoffs (smoke test)
+        run: uv run enclosure.py --no-pcb-mounts --width 60 --breadth 50
 
       - name: List the box sizes (smoke test)
         run: uv run box_sizes.py

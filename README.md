@@ -37,10 +37,10 @@ Options:
 | `--lid-height`   | 10      | lid Z (mm)                    |
 | `--base-height`  | 30      | base Z (mm)                   |
 | `--flange`       | off     | add the M5 mount flange       |
-| `--pcb-mounts`   | off     | add PCB standoffs (top + bottom) |
+| `--no-pcb-mounts`| off     | omit PCB standoffs (on by default) |
 | `-o/--outdir`    | `.`     | output directory              |
 
-Running with no arguments produces the default box (no flange, no standoffs).
+Running with no arguments produces the default box (PCB standoffs on, no flange).
 
 The zip always contains: `*_base.step/.stl`, `*_lid.step/.stl`, a `*_pcb.dxf`
 (PCB outline inset `pcb_edge_clearance` from the inner wall, with M3 clearance
@@ -60,7 +60,7 @@ through the eye and slides fully over the plate) plus an end round hole either
 side. As the box shrinks the round holes are dropped and only the keyhole slot
 remains.
 
-## PCB standoffs (opt-in, `--pcb-mounts`)
+## PCB standoffs (on by default, `--no-pcb-mounts` to omit)
 
 Fixed-height (`pcb_pillar_height`, 4 mm) self-tapper pillars (M3 pilot) are added
 to **both** the base and lid inner surfaces, sitting on the diagonals

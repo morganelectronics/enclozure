@@ -63,8 +63,8 @@ class Enclosure:
     m5_clearance: float = 5.5           # M5 shank clearance
     m5_head_clearance: float = 10.0     # M5 head pass-through (keyhole eye / "head width")
 
-    # ---- PCB mounting standoffs (opt-in) -------------------------------
-    pcb_mounts: bool = False
+    # ---- PCB mounting standoffs (on by default) ------------------------
+    pcb_mounts: bool = True
     pcb_screw_hole: float = 2.5         # M3 self-tapper pilot hole
     pcb_pillar_height: float = 4.0      # fixed height above the inner surface
     pcb_pillar_gap: float = 2.0         # gap to the corner pillars, along the diagonal
@@ -439,7 +439,8 @@ def main(argv=None):
     p.add_argument("--lid-height", type=float, default=10.0, help="lid Z (mm)")
     p.add_argument("--base-height", type=float, default=30.0, help="base Z (mm)")
     p.add_argument("--flange", action="store_true", help="add the M5 wall-mount flange")
-    p.add_argument("--pcb-mounts", action="store_true", help="add PCB standoffs (top and bottom)")
+    p.add_argument("--no-pcb-mounts", dest="pcb_mounts", action="store_false",
+                   help="omit the PCB standoffs (on by default)")
     p.add_argument("-o", "--outdir", default=".", help="output directory (default: CWD)")
     a = p.parse_args(argv)
 
