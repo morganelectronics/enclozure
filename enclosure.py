@@ -67,7 +67,7 @@ class Enclosure:
     pcb_mounts: bool = True
     pcb_screw_hole: float = 2.5         # M3 self-tapper pilot hole
     pcb_pillar_height: float = 4.0      # fixed height above the inner surface
-    pcb_pillar_gap: float = 2.0         # gap to the corner pillars, along the diagonal
+    pcb_wall_clearance: float = 4.0     # gap from the post edge to the inner wall, on the diagonal
     pcb_edge_clearance: float = 1.0     # PCB outline clearance inside the cavity wall
     m3_clearance: float = 3.2           # M3 clearance hole in the PCB
 
@@ -232,20 +232,37 @@ class Enclosure:
         return self.pcb_screw_hole + 2 * self.outer_wall
 
     def pcb_points(self):
-        """Standoff centres on the diagonals, pcb_pillar_gap from the corner
-        pillars. Four on big boxes, dropping to a diagonal pair, then a single
-        central post when the box gets too small to fit more."""
-        Rop = self.outer_pillar_dia / 2
+        """Standoff centres on the diagonals, the post edge held
+        pcb_wall_clearance from the inner wall. The cavity corners are filleted,
+        so the position is solved numerically against the real wall. Four on big
+        boxes, dropping to a diagonal pair, then a single central post."""
+        if getattr(self, "_pts", None) is not None:
+            return self._pts
+
         Rpp = self.pcb_pillar_dia / 2
-        d = (Rop + self.pcb_pillar_gap + Rpp) / math.sqrt(2)  # per-axis diagonal inset
-        px = (self.width / 2 - Rop) - d
-        py = (self.breadth / 2 - Rop) - d
+        target = Rpp + self.pcb_wall_clearance       # post centre -> wall distance
+        a1 = self.width / 2 - self.outer_pillar_dia  # centreline armpit, +,+ quadrant
+        b2 = self.breadth / 2 - self.outer_pillar_dia
+        wall = self.centre_wire().offset2D(-self.ledge / 2, "arc")[0]
+
+        def clearance_at(s):  # move inward along the diagonal from the armpit
+            return wall.distance(cq.Vertex.makeVertex(a1 - s, b2 - s, 0))
+
+        lo, hi = 0.0, max(a1, b2)
+        for _ in range(32):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if clearance_at(mid) < target else (lo, mid)
+        s = (lo + hi) / 2
+        px, py = a1 - s, b2 - s
+
         sep = self.pcb_pillar_dia + 1.0  # keep posts off each other
         if px > 0 and py > 0 and 2 * px >= sep and 2 * py >= sep:
-            return [(px, py), (-px, py), (px, -py), (-px, -py)]
-        if px > 0 and py > 0 and 2 * math.hypot(px, py) >= sep:
-            return [(px, py), (-px, -py)]
-        return [(0.0, 0.0)]
+            self._pts = [(px, py), (-px, py), (px, -py), (-px, -py)]
+        elif px > 0 and py > 0 and 2 * math.hypot(px, py) >= sep:
+            self._pts = [(px, py), (-px, -py)]
+        else:
+            self._pts = [(0.0, 0.0)]
+        return self._pts
 
     def _add_standoffs(self, part: cq.Workplane, floor_z: float) -> cq.Workplane:
         """Add fixed-height self-tapper pillars standing on the inner surface."""

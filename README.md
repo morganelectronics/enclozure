@@ -64,7 +64,7 @@ remains.
 
 Fixed-height (`pcb_pillar_height`, 4 mm) self-tapper pillars (M3 pilot) are added
 to **both** the base and lid inner surfaces, sitting on the diagonals
-`pcb_pillar_gap` (2 mm) from the corner pillars. The count adapts to size:
+`pcb_wall_clearance` (4 mm) clear of the inner wall. The count adapts to size:
 **4** on big boxes, dropping to a **diagonal pair**, then a **single central**
 post on the smallest boxes.
 
