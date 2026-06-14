@@ -54,13 +54,11 @@ flange hole sizes).
 A flat M5 mounting base. It is the **convex hull of one disc per centre**: the
 corner pillars (at the pillar radius, so the hull reproduces the case outline)
 plus a disc of radius `head_r + outer_wall` at every mounting hole and slot end
-(so one wall thickness of plate is left around the big head hole). Being a hull
-it is entirely convex — no
-concave notches or thin "weak bits". Each long side carries a central keyhole
-slot (eye + slot, parallel to the wall, ~2 head-widths long so the head drops
-through the eye and slides fully over the plate) plus an end round hole either
-side. As the box shrinks the round holes are dropped and only the keyhole slot
-remains.
+(so one wall thickness of plate is left around the big head hole). Each long
+side carries a central keyhole slot (eye + slot, parallel to the wall, ~2
+head-widths long so the head drops through the eye and slides fully over the
+plate) plus an end round hole either side. As the box shrinks the round holes
+are dropped and only the keyhole slot remains.
 
 ## PCB standoffs (on by default, `--no-pcb-mounts` to omit)
 
