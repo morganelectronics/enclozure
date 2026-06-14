@@ -2,7 +2,8 @@
 
 Parametric sealed enclosure generator (CadQuery). A two-part box (base + lid)
 with an o-ring tongue-and-groove seal, corner screw posts for threaded inserts,
-and an M5 wall-mount flange.
+an M5 wall-mount flange, and PCB standoffs with a matching PCB outline (DXF)
+for the top and bottom.
 
 📦 **A selection of pre-built boxes is ready to download in the
 [Releases](https://github.com/morganelectronics/enclozure/releases).**
