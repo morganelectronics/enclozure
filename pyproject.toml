@@ -3,6 +3,8 @@ name = "enclosure"
 version = "0.1.0"
 description = "Parametric sealed enclosure generator (CadQuery) — exports STEP + STL as a zip"
 readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "cadquery>=2.7",

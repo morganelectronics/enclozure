@@ -1,2 +1,6 @@
 /*.step
+/*.stl
+/*.zip
 /*.lock
+/.vs/
+/__pycache__/

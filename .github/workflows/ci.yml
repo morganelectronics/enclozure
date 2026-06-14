@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Resolve dependencies
+        run: uv sync
+
+      - name: Generate the default enclosure (smoke test)
+        run: uv run enclosure.py
+
+      - name: Generate a flanged enclosure (smoke test)
+        run: uv run enclosure.py --flange --width 120 --breadth 90
+
+      - name: Check the zips were produced
+        run: |
+          ls -l *.zip
+          test "$(ls *.zip | wc -l)" -ge 2
+
+      - name: Upload generated parts
+        uses: actions/upload-artifact@v4
+        with:
+          name: enclosure-parts
+          path: "*.zip"
