@@ -2,20 +2,14 @@
 import vtk
 import cadquery as cq
 
-# Run enclosure.py with a no-op show_object so its functions become available.
-ns = {"show_object": lambda *a, **k: None}
-with open("enclosure.py", "r") as f:
-    exec(compile(f.read(), "enclosure.py", "exec"), ns)
+from enclosure import Enclosure
 
 
 def _shape(obj):
-    if isinstance(obj, cq.Workplane):
-        return obj.val()
-    return obj
+    return obj.val() if isinstance(obj, cq.Workplane) else obj
 
 
 def _actors(obj):
-    """Return [(shape, (r,g,b)), ...] for a Workplane or an Assembly."""
     if isinstance(obj, cq.Assembly):
         out = []
         for ch in obj.children:
@@ -42,7 +36,6 @@ def render(obj, path, azimuth=-50, elevation=28, size=(1100, 850)):
         p.SetColor(*col)
         p.SetEdgeVisibility(1)
         p.SetEdgeColor(0.15, 0.15, 0.15)
-        p.SetLineWidth(1)
         ren.AddActor(actor)
 
     rw = vtk.vtkRenderWindow()
@@ -67,8 +60,11 @@ def render(obj, path, azimuth=-50, elevation=28, size=(1100, 850)):
     print("wrote", path)
 
 
-render(ns["make_base"](), "out_base.png")
-render(ns["make_lid"](), "out_lid.png")
-render(ns["make_lid"](), "out_lid_top.png", azimuth=-50, elevation=70)
-render(ns["make_assembly"](0.0), "out_assembly_mated.png")
-render(ns["make_assembly"](18.0), "out_assembly_exploded.png")
+if __name__ == "__main__":
+    default = Enclosure()  # bare default: no flange
+    big = Enclosure(width=100, breadth=80, flange=True)
+    small = Enclosure(width=45, breadth=40, base_height=18, lid_height=8, flange=True)
+    render(default.make_base(), "out_base_default.png")          # default box, no flange
+    render(big.make_base(), "out_flange_big.png", elevation=-35)  # from below: flange + bores
+    render(small.make_base(), "out_flange_small.png", elevation=-35)
+    render(default.make_assembly(), "out_assembly.png")
