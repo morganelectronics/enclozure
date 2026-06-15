@@ -88,8 +88,10 @@ is seated — change either parameter and the groove tracks it.
 ## 3D printing & materials
 
 This design is intended to be **3D printed**. On an **FDM (filament) printer** it
-is sized for a **0.4 mm nozzle** — wall thicknesses and clearances are multiples
-of 0.4 mm, so perimeters come out clean and solid without thin slivers.
+is sized for a **0.4 mm nozzle** — wall thicknesses are multiples of 0.4 mm, so
+the walls come out as a whole number of perimeters with no thin slivers. (Nozzle
+width only affects wall thickness; vertical sizes are set by layer height and
+X/Y clearances are just gaps.)
 
 - **PETG** is recommended for a waterproof box — it bonds between layers far better
   than PLA, so the walls and seal land actually hold water out.
